@@ -134,8 +134,8 @@
             }
         }
 
-        // --- 2. Funktion für den EINLÖSEN Button (Platzhalter für Backend) ---
-        function redeemKey() {
+        // --- 2. Funktion für den EINLÖSEN Button (VERBUNDEN MIT BACKEND) ---
+        async function redeemKey() {
             const key = document.getElementById('key-input').value.trim();
             const statusBox = document.getElementById('status-message');
             
@@ -143,6 +143,51 @@
                 statusBox.className = "mt-4 text-center text-sm font-semibold p-2 rounded-lg bg-yellow-500/20 text-yellow-400 border border-yellow-500/30 block";
                 statusBox.innerText = "Bitte gib zuerst einen Key ein!";
                 return;
+            }
+
+            // Zeige "Wird geprüft" an
+            statusBox.className = "mt-4 text-center text-sm font-semibold p-2 rounded-lg bg-blue-500/20 text-blue-400 border border-blue-500/30 block";
+            statusBox.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Key wird auf dem Server überprüft...';
+
+            try {
+                // WICHTIG: Füge hier zwischen den ' ' deine kopierte Render-URL ein, plus /api/redeem
+                const serverUrl = 'https://DEIN-SERVER-NAME.onrender.com/api/redeem';
+
+                const response = await fetch(serverUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ key: key })
+                });
+
+                if (response.ok) {
+                    // Key war richtig! Lade die Datei im Hintergrund herunter
+                    const blob = await response.blob();
+                    const downloadUrl = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.style.display = 'none';
+                    a.href = downloadUrl;
+                    a.download = 'SteamUnlocker_Setup.exe'; 
+                    document.body.appendChild(a);
+                    a.click();
+                    window.URL.revokeObjectURL(downloadUrl);
+
+                    // Erfolgsmeldung
+                    statusBox.className = "mt-4 text-center text-sm font-semibold p-2 rounded-lg bg-green-500/20 text-green-400 border border-green-500/30 block";
+                    statusBox.innerHTML = '<i class="fa-solid fa-check"></i> Key bestätigt! Download startet...';
+                } else {
+                    // Key war falsch oder schon benutzt
+                    const errorData = await response.json();
+                    statusBox.className = "mt-4 text-center text-sm font-semibold p-2 rounded-lg bg-red-500/20 text-red-400 border border-red-500/30 block";
+                    statusBox.innerHTML = '<i class="fa-solid fa-xmark"></i> ' + (errorData.message || "Ungültiger oder bereits benutzter Key!");
+                }
+            } catch (error) {
+                // Server ist gerade nicht erreichbar
+                statusBox.className = "mt-4 text-center text-sm font-semibold p-2 rounded-lg bg-red-500/20 text-red-400 border border-red-500/30 block";
+                statusBox.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i> Server-Fehler: Backend nicht erreichbar.';
+            }
+        
             }
 
             // Zeige "Wird geprüft" an
